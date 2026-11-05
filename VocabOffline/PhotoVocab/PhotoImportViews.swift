@@ -386,6 +386,16 @@ struct AISettingsView: View {
     @State private var consent = AISettings.geminiConsent
     private let stats = AIUsageStats.load()
 
+    /// Hiện độ dài và đầu/cuối key để nhận ra key bị dán đè, dán thiếu
+    private var keyHint: String {
+        let k = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !k.isEmpty else { return "Key được lưu trong Keychain của máy, không nằm trong file dữ liệu." }
+        let head = k.prefix(6), tail = k.suffix(4)
+        var hint = "Key hiện tại: \(head)…\(tail), \(k.count) ký tự."
+        if !k.hasPrefix("AIza") || k.count != 39 { hint += " Key của AI Studio thường bắt đầu bằng AIza và dài 39 ký tự." }
+        return hint
+    }
+
     var body: some View {
         NavigationStack {
             Form {
@@ -395,8 +405,11 @@ struct AISettingsView: View {
                     Link(destination: URL(string: "https://aistudio.google.com/apikey")!) {
                         Label("Lấy key miễn phí ở Google AI Studio", systemImage: "arrow.up.right.square")
                     }
+                    if !apiKey.isEmpty {
+                        Button("Xóa key", role: .destructive) { apiKey = "" }
+                    }
                 } header: { Text("Gemini API key") } footer: {
-                    Text("Key được lưu trong Keychain của máy, không nằm trong file dữ liệu.")
+                    Text(keyHint)
                 }
 
                 Section {

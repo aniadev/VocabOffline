@@ -26,7 +26,7 @@ protocol VocabExtractor {
 
 enum ExtractorError: LocalizedError {
     case missingKey
-    case invalidKey
+    case invalidKey(String)
     case rateLimited
     case modelNotFound(String)
     case badRequest(String)
@@ -36,7 +36,7 @@ enum ExtractorError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .missingKey: return "Chưa có Gemini API key. Vào Cài đặt AI để dán key."
-        case .invalidKey: return "API key không hợp lệ hoặc chưa được bật Gemini API. Kiểm tra lại key trong Cài đặt AI."
+        case .invalidKey(let msg): return "Google từ chối API key. Kiểm tra lại key trong Cài đặt AI.\n(\(msg))"
         case .rateLimited: return "Đã chạm giới hạn lượt miễn phí của Gemini. Đợi 1 phút (hoặc sang ngày mai) rồi thử lại."
         case .modelNotFound(let m): return "Không tìm thấy model \"\(m)\". Vào Cài đặt AI đổi sang model Flash khác."
         case .badRequest(let msg): return "Yêu cầu bị từ chối: \(msg)"
@@ -189,9 +189,9 @@ struct GeminiVocabExtractor: VocabExtractor {
             ?? String(data: data, encoding: .utf8) ?? "HTTP \(status)"
         switch status {
         case 400:
-            if msg.localizedCaseInsensitiveContains("API key") { return .invalidKey }
+            if msg.localizedCaseInsensitiveContains("API key") { return .invalidKey(msg) }
             return .badRequest(msg)
-        case 401, 403: return .invalidKey
+        case 401, 403: return .invalidKey(msg)
         case 404: return .modelNotFound(model)
         case 429: return .rateLimited
         case 500...599: return .server("HTTP \(status)")
